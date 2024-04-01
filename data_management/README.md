@@ -63,7 +63,7 @@ splitに指定可能な値は[wikipedia dumpのindex](https://dumps.wikimedia.or
 
 
 ```sh
-$ python -m preprocessing.download_dataset --dataset=lawdata --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset
+$ python -m preprocessing.download_dataset --dataset=lawdata --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/jalaw
 ```
 
 
