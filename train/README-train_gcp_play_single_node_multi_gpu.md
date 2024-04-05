@@ -3,7 +3,7 @@
 ## 前提
 
 * 計算環境: g2, 1 node, 1 GPU (Nvidia L4 24GB)
-  * 例: `$ srun --partition g2 --nodes=1 --gpus-per-node=1 --time=06:00:00 -c 12 --pty bash -i`
+  * 例: `$ srun --gpus-per-node=1 --time=06:00:00 --nodelist=mlpre-g2-ghpc-9 --pty bash -i`
 
 ## Step 0. 環境構築
 
@@ -291,8 +291,8 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 # 変換スクリプトを実行。
 (.venv_train) $ bash ./convert_tokenizer_and_pretrained_model_to_huggingface_transformers.sh \
     --input_tokenizer_file /persistentshare/storage/team_nakamura/member/horie/tokenizer/JINIAC_V0_2.model \
-    --input_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step2_pretrain_model/mabiki_0.119b/checkpoint/gpt_0.125B_tok300B_lr6.0e-4_min1.0e-6_w3000M_d300B_cosine_gbs256_mbs1_g1_pp1_seed1234_rebase/global_step4000 \
-    --output_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.1113B_global_step4000
+    --input_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step2_pretrain_model/merge/checkpoint/gpt_0.125B_tok300B_lr6.0e-4_min1.0e-6_w3000M_d300B_cosine_gbs256_mbs1_g1_pp1_seed1234_rebase/global_step2000 \
+    --output_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.1113B_merge_step2000
 ```
 
 ### Step 3-2. トークナイザーと事前学習済みモデルのHuggingFace Hubへのアップロード
@@ -309,8 +309,8 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 
 # アップロードスクリプトを実行。
 (.venv_train) $ python ./upload_tokenizer_and_pretrained_model_to_huggingface_hub.py \
-    --input_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.1113B_global_step4000 \
-    --output_model_name gpt_0.1113B_JINIAC_0_1_step4000
+    --input_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.1113B_merge_step2000 \
+    --output_model_name gpt_0.1113B_JINIAC_0_2_step2000
 ```
 
 ### Step 3-2-1. トークナイザーのHuggingFace Hubへのアップロード
