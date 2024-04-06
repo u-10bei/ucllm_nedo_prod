@@ -172,6 +172,7 @@ dataset/wikipedia/2.jsonl
 
 ```sh
 $ bin/concat dataset/wikipedia dataset/wikipedia/merged
+$ bin/concat /persistentshare/storage/team_nakamura/member/horie/dataset/merge /persistentshare/storage/team_nakamura/member/horie/dataset/merged
 ```
 
 出力されるファイルは以下のとおりです
