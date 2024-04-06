@@ -8,6 +8,8 @@ _引用: A Survey of Large Language Models, https://arxiv.org/pdf/2303.18223.pdf
 
 ### condaによる仮想環境の構築
 ```sh
+$ srun --gpus-per-node=0 --time=06:00:00 --nodelist=mlpre-g2-ghpc-9 --pty bash -i
+
 $ cd ~/
 
 # condaのインストール先ディレクトリを作成。
@@ -66,6 +68,12 @@ splitに指定可能な値は[wikipedia dumpのindex](https://dumps.wikimedia.or
 $ python -m preprocessing.download_dataset --dataset=lawdata --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/jalaw
 ```
 
+### [aozora](https://huggingface.co/datasets/globis-university/aozorabunko-clean)
+
+
+```sh
+$ python -m preprocessing.download_dataset --dataset=aozora --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/aozora
+```
 
 ### [Redpajama-1T](https://huggingface.co/datasets/togethercomputer/RedPajama-Data-1T)
 
