@@ -30,7 +30,7 @@ def main() -> None:
 
     # Loads and tests the remote tokenizer and the remote model.
     huggingface_username = HfApi().whoami()["name"]
-    remote_tokenizer, remote_model = load_tokenizer(os.path.join(huggingface_username, args.output_model_name))
+    remote_tokenizer = load_tokenizer(os.path.join(huggingface_username, args.output_model_name))
 
 
 if __name__ == "__main__":
