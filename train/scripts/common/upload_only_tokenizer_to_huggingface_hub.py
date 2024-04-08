@@ -23,7 +23,7 @@ def main() -> None:
     args = parse_arguments()
 
     # Loads and tests the local tokenizer and the local model.
-    local_tokenizer, = load_tokenizer(args.input_tokenizer_dir)
+    local_tokenizer = load_tokenizer(args.input_tokenizer_dir)
 
     # Uploads the local tokenizer and the local model to HuggingFace Hub.
     local_tokenizer.push_to_hub(args.output_model_name)
