@@ -1,9 +1,10 @@
 import datasets
 
 hug_base = "JINIAC/"
+hug_baseu = "u-10bei"
 input_base = "/persistentshare/storage/team_nakamura/member/horie/dataset/"
 
-dataset_type = "aozora"
+dataset_type = "merge3"
 filter_type = "before"
 
 if dataset_type == "aozora":
@@ -26,7 +27,14 @@ elif dataset_type == "ja_law":
     input_path = input_base + "merge/jalaw_filter.jsonl"
   elif filter_type == "before":
     hug_repo = hug_base + "ja_law_20240330_prefilter"        
-    input_path = input_base + "json/jalaw/jalaw.jsonl"            
+    input_path = input_base + "json/jalaw/jalaw.jsonl"
+elif dataset_type == "merge3":
+    hug_repo = hug_baseu + "merge_aozora_jalaw_jawiki"
+    input_path = input_base + "merged/merge3.jsonl"
+
 
 dataset = datasets.load_dataset("json", data_files = input_path)
-dataset.push_to_hub(hug_repo)
+if dataset_type == "merge3":
+  dataset.push_to_hub(hug_repo, private=True)  
+else:
+  dataset.push_to_hub(hug_repo)

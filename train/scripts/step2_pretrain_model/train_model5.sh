@@ -3,7 +3,7 @@
 # Command line options go here
 #SBATCH --partition=g2
 #SBATCH --time=06:00:00
-#SBATCH --nodelist=mlpre-g2-ghpc-9
+#SBATCH --nodes=1
 #SBATCH --job-name=train5
 #SBATCH --output=train5.out
 #SBATCH --gpus-per-node=1
