@@ -12,7 +12,6 @@ def process_json_lines(lines: list[str], output_base: str, stats: list[dict]):
     cleaner = Compose([
         document_filters.JSONLoader(),
         document_filters.DocumentNormalizer(),
-        document_filters.DocumentLengthFilter(min_doc_len=20,max_doc_len=1000),
         document_filters.DiscardBBSComments(),
         document_filters.DiscardAds(),
         document_filters.DiscardDiscriminationContentJa(),
@@ -33,9 +32,9 @@ def process_json_lines(lines: list[str], output_base: str, stats: list[dict]):
                 result = cleaner.apply(Document(line))
                 if result.is_rejected:
                     rejected.write(result.text + "\n")
-                else:
-                    writer.write(result.text + "\n")
-                    remained_lines.append(result.text)
+                else:                    
+                    writer.write(json.loads(line)['text'] + "\n")
+                    remained_lines.append(json.loads(line)['text'])
 
     with open(os.path.join(output_base, "stat.filtering.jsonl"), "w") as writer:
         writer.write(json.dumps(cleaner.statistics, ensure_ascii=False) + "\n")

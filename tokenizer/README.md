@@ -70,13 +70,6 @@ $ python -m preprocessing.t01_delete_spaceline \
 
 ## 4. cleaning and text作成
 
-### 日本語
-```bash
-$ python -m preprocessing.filtering \
-    --input_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/ \
-    --output_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/
-```
-### 英語
 ```bash
 $ python -m preprocessing.filtering \
     --input_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/ \
@@ -92,7 +85,9 @@ python -m  unidic download
 ```
 ### 日本語
 ```bash
-$ python -m preprocessing.t02_mabiki --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt
+$ python -m preprocessing.t02_mabiki \
+    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/ja_wiki/filtering.txt \
+    --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt
 ```
 
 ## 6. 分かち書き（日本語のみ）
