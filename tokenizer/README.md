@@ -1,10 +1,5 @@
 # Tokenizer
 
-## 環境構築
-
-[こちら](/home/ext_u10bei_github_io_gmail_com/ucllm_nedo_dev/data_management/README.md)の方法で、  
-venv_dataの環境を構築する。
-
 ## GCPでの実行手順
 ```bash
 #実行環境
@@ -36,6 +31,10 @@ $ python -m preprocessing.download_dataset --split=20240301 --language=en --outp
 
 ### 事前準備
 ```bash
+# Python仮想環境を有効化。
+$ conda deactivate
+# Python仮想環境を有効化。（wikiextractorはpython3.10でしか動かない）
+$ conda activate .venv_train
 $ pip install wikiextractor
 ```
 ### 日本語
@@ -46,8 +45,17 @@ $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamur
 ```bash
 $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/en/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/tmp/wikipedia/20240301/en/enwiki-20240301-pages-articles-multistream.xml.bz2
 ```
-## 2. Data processing
+## 3. text作成
 
+### 日本語
+```bash
+$ python -m preprocessong.t01_delete_spaceline --language ja --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/
+```
+### 英語
+```bash
+$ python -m preprocessong.t01_delete_spaceline --language en --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/
+```
+```
 
 ### Filtering
 
