@@ -50,19 +50,3 @@ def download_dataset(date: str, output_base: str = "output", lang: str = "ja") -
         logging.info(f"File {os.path.join(dump_path, filename)} already exists")
         logging.info(f"Skipping download\n")
 
-    # ダンプデータをパースする
-    output_path = os.path.join(output_base, f"{lang}wiki")
-    if os.path.exists(output_path):
-        shutil.rmtree(output_path)
-    os.makedirs(output_path)
-
-    logging.info(f"Parse and process {os.path.join(dump_path, filename)}")
-    with bz2.open(os.path.join(dump_path, filename), 'rt') as compressed_file:
-        dump = mwxml.Dump.from_file(compressed_file)
-        for index, page in enumerate(dump):
-            if index > 0 and index % 1000 == 0:
-                logging.info(f"Processed {index} articles")
-
-            if page.namespace == 0 and page.redirect is None:
-                file_index = int(hashlib.sha256(page.title.encode()).hexdigest(), 16) % NUM_FILES
-                process_dump(page, output_path, file_index)

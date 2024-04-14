@@ -6,7 +6,7 @@
 venv_dataの環境を構築する。
 
 ## GCPでの実行手順
-```sh
+```bash
 #実行環境
 $ srun --gpus-per-node=0 --time=06:00:00 --nodes=1 --pty bash -i
 #condaを有効化。
@@ -22,22 +22,30 @@ $ cd ~/ucllm_nedo_dev/tokenizer
 
 ### [日本語wikipedia dump](https://dumps.wikimedia.org/jawiki/)
 
-```sh
+```bash
 $ python -m preprocessing.download_dataset --split=20240301 --language=ja --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer
 ```
 
 ### [英語wikipedia dump](https://dumps.wikimedia.org/enwiki/)
 
-```sh
+```bash
 $ python -m preprocessing.download_dataset --split=20240301 --language=en --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer
 ```
 
-## 1. データ整形
+## 2. データ整形
 
-```sh
-$ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/prefilter/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tmp/wikipedia/20240301/ja/jawiki-20240301-pages-articles-multistream.xml.bz2
+### 事前準備
+```bash
+$ pip install wikiextractor
 ```
-
+### 日本語
+```bash
+$ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ja/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/tmp/wikipedia/20240301/ja/jawiki-20240301-pages-articles-multistream.xml.bz2
+```
+### 英語
+```bash
+$ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/en/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/tmp/wikipedia/20240301/en/enwiki-20240301-pages-articles-multistream.xml.bz2
+```
 ## 2. Data processing
 
 

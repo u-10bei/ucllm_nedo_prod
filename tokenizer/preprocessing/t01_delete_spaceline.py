@@ -1,8 +1,9 @@
 import os
 import re
 
-in_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/prefilter'
-text_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/text/ja_wiki.txt'
+lang = 'ja'
+in_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/prefilter/' + lang
+text_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/text/' + lang + '_wiki.txt'
 
 num = 0
 with open(text_path, 'w', encoding='utf-8') as o:
