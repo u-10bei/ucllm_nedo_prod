@@ -2,8 +2,8 @@
 
 ## 前提
 
-* 計算環境: g2, 1 node, 1 GPU (Nvidia L4 24GB)
-  * 例: `$ srun --gpus-per-node=1 --time=06:00:00 --nodelist=mlpre-g2-ghpc-9 --pty bash -i`
+* 計算環境: g2, 1 node, 4 GPU (Nvidia L4 24GB)
+  * 例: `$ srun --gpus-per-node=4 --time=01:00:00 --nodes=1 --pty bash -i`
 
 ## Step 0. 環境構築
 
@@ -23,23 +23,25 @@ After:
 ```sh
 ~/ucllm_nedo_dev/
 └── train/
-    ├── .venv_train/
-    ├── apex/
-    ├── llm-jp-sft/
-    ├── Megatron-DeepSpeed/
+    ├── .venv_moe/
     ├── scripts/
     ├── .gitignore
     ├── README.md
     └── requirements.txt
+/persistentshare/storage/team_nakamura/member/
+└── horie    
+    ├── apex/
+    ├── llm-jp-sft/
+    └── Megatron-DeepSpeed/
 ```
 
 ### Step 0-0. このgitレポジトリのクローン
 
 ```sh
-$ cd ~/
+$ cd ~/ucllm_nedo_dev/train/
 
 # このレポジトリをucllm_nedo_devという名前でクローンする。
-$ git clone https://github.com/matsuolab/ucllm_nedo_prod.git ucllm_nedo_dev
+$ git clone https://github.com/JINIAC/moe_recipe_modified_demo.git
 
 # ~/ucllm_nedo_dev/train以下のファイル一覧が表示されるか確認。
 $ ls ~/ucllm_nedo_dev/train/
@@ -69,127 +71,128 @@ $ which conda && echo "====" && conda --version
 $ cd ~/ucllm_nedo_dev/train/
 
 # Python仮想環境を作成。
-$ conda create --name .venv_train python=3.9 -y
+$ conda create --name .venv_moe python=3.10 -y
 
 # Python仮想環境を有効化した時に自動で環境変数 `$LD_LIBRARY_PATH` を編集するように設定。
-$ mkdir -p ~/miniconda3/envs/.venv_train/etc/conda/activate.d
-$ echo 'export ORIGINAL_LD_LIBRARY_PATH=$LD_LIBRARY_PATH' > ~/miniconda3/envs/.venv_train/etc/conda/activate.d/edit_environment_variable.sh
-$ echo 'export LD_LIBRARY_PATH="$HOME/miniconda3/envs/.venv_train/lib:$LD_LIBRARY_PATH"' >> ~/miniconda3/envs/.venv_train/etc/conda/activate.d/edit_environment_variable.sh
-$ chmod +x ~/miniconda3/envs/.venv_train/etc/conda/activate.d/edit_environment_variable.sh
+$ mkdir -p ~/miniconda3/envs/.venv_moe/etc/conda/activate.d
+$ echo 'export ORIGINAL_LD_LIBRARY_PATH=$LD_LIBRARY_PATH' > ~/miniconda3/envs/.venv_moe/etc/conda/activate.d/edit_environment_variable.sh
+$ echo 'export LD_LIBRARY_PATH="$HOME/miniconda3/envs/.venv_moe/lib:$LD_LIBRARY_PATH"' >> ~/miniconda3/envs/.venv_moe/etc/conda/activate.d/edit_environment_variable.sh
+$ chmod +x ~/miniconda3/envs/.venv_moe/etc/conda/activate.d/edit_environment_variable.sh
 
 # Python仮想環境を無効化した時に自動で環境変数 `$LD_LIBRARY_PATH` を元に戻すように設定。
-$ mkdir -p ~/miniconda3/envs/.venv_train/etc/conda/deactivate.d
-$ echo 'export LD_LIBRARY_PATH=$ORIGINAL_LD_LIBRARY_PATH' > ~/miniconda3/envs/.venv_train/etc/conda/deactivate.d/rollback_environment_variable.sh
-$ echo 'unset ORIGINAL_LD_LIBRARY_PATH' >> ~/miniconda3/envs/.venv_train/etc/conda/deactivate.d/rollback_environment_variable.sh
-$ chmod +x ~/miniconda3/envs/.venv_train/etc/conda/deactivate.d/rollback_environment_variable.sh
+$ mkdir -p ~/miniconda3/envs/.venv_moe/etc/conda/deactivate.d
+$ echo 'export LD_LIBRARY_PATH=$ORIGINAL_LD_LIBRARY_PATH' > ~/miniconda3/envs/.venv_moe/etc/conda/deactivate.d/rollback_environment_variable.sh
+$ echo 'unset ORIGINAL_LD_LIBRARY_PATH' >> ~/miniconda3/envs/.venv_moe/etc/conda/deactivate.d/rollback_environment_variable.sh
+$ chmod +x ~/miniconda3/envs/.venv_moe/etc/conda/deactivate.d/rollback_environment_variable.sh
 
 # 作成したPython仮想環境を有効化。
-$ conda activate .venv_train
+$ conda activate .venv_moe
+
+# Python仮想環境を有効化した後は (python3コマンドだけでなく) pythonコマンドも使えることを確認。
+(.venv_moe) $ which python && echo "====" && python --version
+
+# 環境変数 `$PATH` に `$HOME/miniconda3/envs/.venv_moe/bin` が含まれていることを確認。
+(.venv_moe) $ echo $PATH
+
+# 環境変数 `$LD_LIBRARY_PATH` に `$HOME/miniconda3/envs/.venv_moe/lib` が含まれていることを確認。
+(.venv_moe) $ echo $LD_LIBRARY_PATH
 
 # cuda-11.8.0をインストール。
 $ conda install nvidia/label/cuda-11.8.0::cuda-toolkit
 
 # PyTorchを指定のバージョンでインストール。
-$ conda install pytorch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 pytorch-cuda=11.8 -c pytorch -c nvidia
-
-# Python仮想環境を有効化した後は (python3コマンドだけでなく) pythonコマンドも使えることを確認。
-(.venv_train) $ which python && echo "====" && python --version
-
-# 環境変数 `$PATH` に `$HOME/miniconda3/envs/.venv_train/bin` が含まれていることを確認。
-(.venv_train) $ echo $PATH
-
-# 環境変数 `$LD_LIBRARY_PATH` に `$HOME/miniconda3/envs/.venv_train/lib` が含まれていることを確認。
-(.venv_train) $ echo $LD_LIBRARY_PATH
+$ conda install pytorch==2.1.2 torchvision==0.17.0 torchaudio==2.1.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
 ### Step 0-3. パッケージ等のインストール
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/moe_recipe_modified_demo
 
 # PyTorchを指定のバージョンでインストールした後に、requirements.txtを用いて諸々のパッケージをインストール。
-(.venv_train) $ pip install -r ~/ucllm_nedo_dev/train/requirements.txt
+
+(.venv_moe) $ pip install -r requirements.txt
 
 # deepspeedの依存パッケージをインストール。
-(.venv_train) $ pip install deepspeed-kernels
+(.venv_moe) $ pip install deepspeed-kernels
 
 # deepspeedを指定のバージョンでインストール。このとき、deepspeed関連の拡張機能たち "ops" を事前にビルドしておくために `DS_BUILD_OPS=1` と設定。
 # https://www.deepspeed.ai/tutorials/advanced-install/#pre-install-deepspeed-ops
 # ※しばらく時間がかかるので注意。
-(.venv_train) $ DS_BUILD_OPS=1 DS_BUILD_EVOFORMER_ATTN=0 DS_BUILD_SPARSE_ATTN=0 pip install deepspeed==0.12.4
+(.venv_moe) $ DS_BUILD_OPS=1 DS_BUILD_EVOFORMER_ATTN=0 DS_BUILD_SPARSE_ATTN=0 pip install deepspeed==0.12.4
 
 # deepspeed関連の拡張機能たち "ops" が正しくインストールされていることを確認。
-(.venv_train) $ ds_report
+(.venv_moe) $ ds_report
 ```
 
 ### Step 0-4. Megatron-DeepSpeedのインストール
 
 ```sh
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie
 
 # Megatron-DeepSpeedのレポジトリをクローン。
-(.venv_train) $ git clone https://github.com/hotsuyuki/Megatron-DeepSpeed
+(.venv_moe) $ git clone https://github.com/hotsuyuki/Megatron-DeepSpeed
 
 # mainブランチではエラーが起きる場合があるため、指定のタグにチェックアウト。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/ && git fetch origin && git checkout refs/tags/ucllm_nedo_dev_v20240205.1.0
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/ && git fetch origin && git checkout refs/tags/ucllm_nedo_dev_v20240205.1.0
 
 # Megatron-DeepSpeedをインストール。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/ && python setup.py install
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/ && python setup.py install
 ```
 
 ### Step 0-5. apexのインストール
 
 ```sh
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie
 
 # apexのレポジトリをクローン。
-(.venv_train) $ git clone https://github.com/NVIDIA/apex
+(.venv_moe) $ git clone https://github.com/NVIDIA/apex
 
 # mainブランチではエラーが起きる場合があるため、指定のタグにチェックアウト。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/apex/ && git fetch origin && git checkout refs/tags/23.08
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/apex/ && git fetch origin && git checkout refs/tags/23.08
 
 # nvccが対応しているCUDAのバージョンとPyTorchが依存しているCUDAのバージョンが一致していることを確認。
-(.venv_train) $ which nvcc && echo "====" && nvcc --version && echo "====" && python -c "import torch; print(torch.version.cuda)"
+(.venv_moe) $ which nvcc && echo "====" && nvcc --version && echo "====" && python -c "import torch; print(torch.version.cuda)"
 
 # pipのバージョンが23.1以上であることを確認。
-(.venv_train) $ which pip && echo "====" && pip --version
+(.venv_moe) $ which pip && echo "====" && pip --version
 
 # pipのバージョンが23.1以上の場合のインストール方法で、apexをインストール。
 # ※しばらく時間がかかるので注意。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/apex/ && pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/apex/ && pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
 
 # apexがインストールされていることを確認。
-(.venv_train) $ pip list | grep "apex"
+(.venv_moe) $ pip list | grep "apex"
 
 # apex_C.cpython-39-x86_64-linux-gnu.soが作成されていることを確認。
-(.venv_train) $ find /persistentshare/storage/team_nakamura/member/horie/apex/build/lib.linux-x86_64-cpython-39/ -name apex_C.cpython-39-x86_64-linux-gnu.so
+(.venv_moe) $ find /persistentshare/storage/team_nakamura/member/horie/apex/build/lib.linux-x86_64-cpython-39/ -name apex_C.cpython-39-x86_64-linux-gnu.so
 ```
 
 ### Step 0-6. Flash Attention 2のインストール
 
 ```sh
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie
 
 # Flash Attention 2のインストールに必要なninjaを念のため再インストール。
-(.venv_train) $ pip uninstall ninja -y && pip install ninja==1.11.1
+(.venv_moe) $ pip uninstall ninja -y && pip install ninja==1.11.1
 
 # Flash Attention 2をインストール。
-(.venv_train) $ pip install flash-attn==2.5.0 --no-build-isolation
+(.venv_moe) $ pip install flash-attn==2.5.0 --no-build-isolation
 
 # Flash Attention 2がインストールされていることを確認。
-(.venv_train) $ pip list | grep "flash-attn"
+(.venv_moe) $ pip list | grep "flash-attn"
 ```
 
 ### Step 0-7. llm-jp-sftのインストール
 
 ```sh
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie
 
 # llm-jp-sftのレポジトリをクローン。
-(.venv_train) $ git clone https://github.com/hotsuyuki/llm-jp-sft
+(.venv_moe) $ git clone https://github.com/hotsuyuki/llm-jp-sft
 
 # mainブランチではエラーが起きる場合があるため、指定のタグにチェックアウト。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/llm-jp-sft/ && git fetch origin && git checkout refs/tags/ucllm_nedo_dev_v20240208.1.0
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/llm-jp-sft/ && git fetch origin && git checkout refs/tags/ucllm_nedo_dev_v20240208.1.0
 ```
 
 ## Step 1. トークナイザーの学習
@@ -197,16 +200,16 @@ $ conda install pytorch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 pytorch-cud
 ### Step 1-1. 学習の実行
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step1_train_tokenizer/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step1_train_tokenizer/
 
 # 学習スクリプトを実行。
-(.venv_train) $ python ./train_sentencepiece_tokenizer.py \
+(.venv_moe) $ python ./train_sentencepiece_tokenizer.py \
     --input /persistentshare/storage/team_nakamura/member/horie/dataset/jawiki_newline_mecab.txt \
     --model_prefix JINIAC_V0_2 \
     --vocab_size 32000
 
 # 出力された学習済みトークナイザーを出力ディレクトリへ移動。
-(.venv_train) $ mkdir -p ~/ucllm_nedo_dev/train/output/step1_train_tokenizer/botchan/ && mv ./botchan.model ./botchan.vocab --target-directory ~/ucllm_nedo_dev/train/output/step1_train_tokenizer/botchan/
+(.venv_moe) $ mkdir -p ~/ucllm_nedo_dev/train/output/step1_train_tokenizer/botchan/ && mv ./botchan.model ./botchan.vocab --target-directory ~/ucllm_nedo_dev/train/output/step1_train_tokenizer/botchan/
 ```
 
 ## Step 2. モデルの事前学習
@@ -214,17 +217,17 @@ $ conda install pytorch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 pytorch-cud
 ### Step 2-1. 事前学習の実行
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step2_pretrain_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step2_pretrain_model/
 
 # W&Bにログイン。
 # https://wandb.ai/settings --> Danger Zone --> API keys --> APIキーをコピペ。
-(.venv_train) $ wandb login
+(.venv_moe) $ wandb login
 
 # W&Bにログインしていることを確認。
-(.venv_train) $ cat ~/.netrc
+(.venv_moe) $ cat ~/.netrc
 
 # 事前学習スクリプトを実行。
-(.venv_train) $ bash ./gcp_node-1_gpu/dataset-arxiv_tokenizer-sentencepiece_model-gpt_0.125B/zero-0_dp-1_pp-1_tp-1_flashattn2-on.sh \
+(.venv_moe) $ bash ./gcp_node-1_gpu/dataset-arxiv_tokenizer-sentencepiece_model-gpt_0.125B/zero-0_dp-1_pp-1_tp-1_flashattn2-on.sh \
     --input_tokenizer_file ~/ucllm_nedo_dev/train/output/step1_train_tokenizer/botchan/botchan.model \
     --output_model_dir ~/ucllm_nedo_dev/train/output/step2_pretrain_model/ \
     --save_interval 200
@@ -242,23 +245,23 @@ $ conda install pytorch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 pytorch-cud
 
 ```sh
 # python3-configの絶対パスを確認。
-(.venv_train) $ which python3-config
+(.venv_moe) $ which python3-config
 
 # ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/data/Makefileのpython3-configのパスを、上記のwhichコマンドで出力された絶対パスに変更。
-(.venv_train) $ vim ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/data/Makefile
+(.venv_moe) $ vim ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/data/Makefile
 """
 # Before
 LIBEXT = $(shell python3-config --extension-suffix)
 
 # After
-LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_train/bin/python3-config --extension-suffix)
+LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_moe/bin/python3-config --extension-suffix)
 """
 
 # ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/data/にてmakeコマンドを実行。
-(.venv_train) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/megatron/data/ && make
+(.venv_moe) $ cd /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/megatron/data/ && make
 
 # helpers.cpython-311-x86_64-linux-gnu.soが作成されていることを確認。
-(.venv_train) $ find /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/megatron/data/ -name helpers.cpython-39-x86_64-linux-gnu.so
+(.venv_moe) $ find /persistentshare/storage/team_nakamura/member/horie/Megatron-DeepSpeed/megatron/data/ -name helpers.cpython-39-x86_64-linux-gnu.so
 ```
 
 参考リンク: <br/>
@@ -275,7 +278,7 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 
 ```sh
 # ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/fused_kernels/build/を削除。
-(.venv_train) $ rm -rf ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/fused_kernels/build/
+(.venv_moe) $ rm -rf ~/ucllm_nedo_dev/train/Megatron-DeepSpeed/megatron/fused_kernels/build/
 ```
 
 参考リンク: <br/>
@@ -286,10 +289,10 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 ### Step 3-1. トークナイザーと事前学習済みモデルのHuggingFace Transformers形式への変換
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
 
 # 変換スクリプトを実行。
-(.venv_train) $ bash ./convert_tokenizer_and_pretrained_model_to_huggingface_transformers.sh \
+(.venv_moe) $ bash ./convert_tokenizer_and_pretrained_model_to_huggingface_transformers.sh \
     --input_tokenizer_file /persistentshare/storage/team_nakamura/member/horie/tokenizer/JINIAC_V0_2.model \
     --input_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step2_pretrain_model/merge3/checkpoint/gpt_0.35B_tok300B_lr3.0e-4_min1.0e-6_w3000M_d300B_cosine_gbs256_mbs1_g1_pp1_seed1234_rebase/global_step1800 \
     --output_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.35B_merge3_step1800
@@ -298,17 +301,17 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 ### Step 3-2. トークナイザーと事前学習済みモデルのHuggingFace Hubへのアップロード
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
 
 # HuggingFaceにログイン。
 # https://huggingface.co/settings/tokens --> 書き込み権限ありのAPIキーをコピペ。
-(.venv_train) $ huggingface-cli login
+(.venv_moe) $ huggingface-cli login
 
 # HuggingFaceにログインしていることを確認。
-(.venv_train) $ huggingface-cli whoami
+(.venv_moe) $ huggingface-cli whoami
 
 # アップロードスクリプトを実行。
-(.venv_train) $ python ./upload_tokenizer_and_pretrained_model_to_huggingface_hub.py \
+(.venv_moe) $ python ./upload_tokenizer_and_pretrained_model_to_huggingface_hub.py \
     --input_tokenizer_and_model_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.35B_merge3_step1800 \
     --output_model_name gpt_0.35B_JINIAC_0_2_merge3_step1800
 ```
@@ -316,17 +319,17 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 ### Step 3-2-1. トークナイザーのHuggingFace Hubへのアップロード
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
 
 # HuggingFaceにログイン。
 # https://huggingface.co/settings/tokens --> 書き込み権限ありのAPIキーをコピペ。
-(.venv_train) $ huggingface-cli login
+(.venv_moe) $ huggingface-cli login
 
 # HuggingFaceにログインしていることを確認。
-(.venv_train) $ huggingface-cli whoami
+(.venv_moe) $ huggingface-cli whoami
 
 # アップロードスクリプトを実行。
-(.venv_train) $ python ./upload_tokenizer_to_huggingface_hub.py \
+(.venv_moe) $ python ./upload_tokenizer_to_huggingface_hub.py \
     --input_tokenizer_dir /persistentshare/storage/team_nakamura/member/horie/output/step3_upload_pretrained_model/JINIAC_v0_2_gpt_0.1113B_global_step2000 \
     --output_model_name JINIAC_tokenizer_v0.2
 ```
@@ -336,14 +339,14 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 ### Step 4-1. ファインチューニングの実行
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step4_finetune_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step4_finetune_model/
 
 # ファインチューニングスクリプトを実行。 (HuggingFaceにアップロードした事前学習モデルをダウンロードして使用する場合)
-(.venv_train) $ bash ./gcp_play_node-1_gpu/dataset-openassistant_tokenizer-sentencepiece_model-gpt_0.125B/launcher-none_zero-none.sh --input_model_name_or_path ${YOUR_HUGGINGFACE_USERNAME}/gpt_0.125B_global_step1000 \
+(.venv_moe) $ bash ./gcp_play_node-1_gpu/dataset-openassistant_tokenizer-sentencepiece_model-gpt_0.125B/launcher-none_zero-none.sh --input_model_name_or_path ${YOUR_HUGGINGFACE_USERNAME}/gpt_0.125B_global_step1000 \
     --output_tokenizer_and_model_dir ~/ucllm_nedo_dev/train/output/step4_finetune_model/gpt_0.125B_global_step1000_openassistant/
 
 # ファインチューニングスクリプトを実行。 (ローカルに保存してある事前学習モデルをそのまま使用する場合)
-(.venv_train) $ bash ./gcp_play_node-1_gpu/dataset-openassistant_tokenizer-sentencepiece_model-gpt_0.125B/launcher-none_zero-none.sh --input_model_name_or_path ~/ucllm_nedo_dev/train/output/step3_upload_pretrained_model/gpt_0.125B_global_step1000/ \
+(.venv_moe) $ bash ./gcp_play_node-1_gpu/dataset-openassistant_tokenizer-sentencepiece_model-gpt_0.125B/launcher-none_zero-none.sh --input_model_name_or_path ~/ucllm_nedo_dev/train/output/step3_upload_pretrained_model/gpt_0.125B_global_step1000/ \
     --output_tokenizer_and_model_dir ~/ucllm_nedo_dev/train/output/step4_finetune_model/gpt_0.125B_global_step1000_openassistant/
 ```
 
@@ -352,13 +355,13 @@ LIBEXT = $(shell /home/ext_u10bei_github_io_gmail_com/miniconda3/envs/.venv_trai
 ### Step 5-1. トークナイザーとファインチューニング済みモデルのHuggingFace Hubへのアップロード
 
 ```sh
-(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step5_upload_finetuned_model/
+(.venv_moe) $ cd ~/ucllm_nedo_dev/train/scripts/step5_upload_finetuned_model/
 
 # HuggingFaceにログインしていることを確認。
-(.venv_train) $ huggingface-cli whoami
+(.venv_moe) $ huggingface-cli whoami
 
 # アップロードスクリプトを実行。
-(.venv_train) $ python ./upload_tokenizer_and_finetuned_model_to_huggingface_hub.py \
+(.venv_moe) $ python ./upload_tokenizer_and_finetuned_model_to_huggingface_hub.py \
     --input_tokenizer_and_model_dir ~/ucllm_nedo_dev/train/output/step4_finetune_model/gpt_0.125B_global_step1000_openassistant/ \
     --output_model_name gpt_0.125B_global_step1000_openassistant \
     --test_prompt_text "Once upon a time,"

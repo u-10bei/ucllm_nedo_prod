@@ -1,18 +1,20 @@
 from fugashi import Tagger
+import json
 
 tagger = Tagger('-Owakati')
 
-text_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/text/ja_wiki.txt'
-mabiki_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/mabiki/ja_wiki_mabiki.txt'
+json_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/aozora/aozora_clean.jsonl'
+mabiki_path = '/persistentshare/storage/team_nakamura/member/horie/dataset/mabiki_a/aozora_mabiki.jsonl'
 
 input = 0
 flag =  0
 output = 0
 with open(mabiki_path, 'w', encoding='utf-8') as o:
-  with open(text_path, 'r', encoding='utf-8') as f:
+  with open(json_path, 'r', encoding='utf-8') as f:
     for line in f:
       input += 1
-      for word in tagger(line):
+      text = json.loads(line)['text']
+      for word in tagger(text):
         if word.feature.lForm == None:
           flag += 1
       if flag == 0:

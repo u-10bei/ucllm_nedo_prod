@@ -61,24 +61,24 @@ seq_len=2048
 ## provide better zero-shot eval results.
 
 ## GPT-3 Small 125M
-# model_size=0.125
-# num_layers=12
-# hidden_size=768
-# num_attn_heads=12
-# global_batch_size=256
-# lr=6.0e-4
-# min_lr=1.0e-6
-# init_std=0.02
+model_size=0.125
+num_layers=12
+hidden_size=768
+num_attn_heads=12
+global_batch_size=256
+lr=6.0e-4
+min_lr=1.0e-6
+init_std=0.02
 
 ## GPT-3 Medium 350M
-model_size=0.35
-num_layers=24
-hidden_size=1024
-num_attn_heads=16
-global_batch_size=256
-lr=3.0e-4
-min_lr=1.0e-6
-init_std=0.018
+# model_size=0.35
+# num_layers=24
+# hidden_size=1024
+# num_attn_heads=16
+# global_batch_size=256
+# lr=3.0e-4
+# min_lr=1.0e-6
+# init_std=0.018
 
 ## GPT-3 Large 760M
 # model_size=0.76
@@ -235,7 +235,7 @@ num_workers=0
 
 # If either arxiv_text_document.bin or arxiv_text_document.idx doesn't exist yet,
 # then downloads arxiv.jsonl and preprocesses the data.
-data_path="${megatron_deepspeed_dir}/dataset/merge_text_document"
+data_path="${megatron_deepspeed_dir}/dataset/merge3_text_document"
 if [ ! -f "${data_path}.bin" ] || [ ! -f "${data_path}.idx" ]; then
 #    echo "Either ${data_path}.bin or ${data_path}.idx doesn't exist yet, so download arxiv.jsonl and preprocess the data."
 #    wget https://data.together.xyz/redpajama-data-1T/v1.0.0/arxiv/arxiv_024de5df-1b7f-447c-8c3a-51407d8d6732.jsonl \

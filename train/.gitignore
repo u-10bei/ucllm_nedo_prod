@@ -17,3 +17,5 @@ output/
 wandb/
 
 *.out
+
+moe_recipe_modified_demo/
