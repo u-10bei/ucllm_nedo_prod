@@ -1,4 +1,5 @@
 # Tokenizer
+ucllm-nedo-dev配下に配置されることを想定しています。
 
 ## GCPでの実行手順
 ```bash
@@ -42,6 +43,7 @@ $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamur
 ```bash
 $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/en/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/tmp/wikipedia/20240301/en/enwiki-20240301-pages-articles-multistream.xml.bz2
 ```
+
 ## 3. text作成（英語は乱択）
 
 ### 事前準備
@@ -64,7 +66,6 @@ $ python -m preprocessing.t01_delete_spaceline --language en --input_base /persi
 
 ### 事前準備
 ```bash
-sudo apt install -y mecab libmecab-dev mecab-ipadic-utf8
 pip install fugashi[unidic]
 python -m  unidic download
 ```
@@ -73,3 +74,28 @@ python -m  unidic download
 $ python -m preprocessing.t02_mabiki --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt
 ```
 
+## 5. 分かち書き（日本語のみ）
+
+### 日本語
+```bash
+$ python -m preprocessing.t03_wakachi --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt
+```
+
+## 6. 言語ごとのトークナイズ
+
+### 事前準備
+```bash
+# Python仮想環境を有効化。
+$ conda deactivate
+# Python仮想環境を有効化。
+$ conda activate .venv
+```
+### 日本語
+```bash
+$ python -m train_tokenizer.train_sentencepiece_tokenizer \
+    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt \
+    --model_prefix JINIAC_V0_9_ja48000 \
+    --vocab_size 48000 \
+    --num_threads 12 \
+    --pretokenization_delimiter "||||"
+```
