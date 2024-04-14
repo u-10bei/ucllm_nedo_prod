@@ -11,3 +11,5 @@ wandb/
 
 *.out
 *.sh
+*.model
+*.vocab

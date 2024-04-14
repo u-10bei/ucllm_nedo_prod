@@ -44,7 +44,7 @@ $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamur
 $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/en/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/tmp/wikipedia/20240301/en/enwiki-20240301-pages-articles-multistream.xml.bz2
 ```
 
-## 3. text作成（英語は乱択）
+## 3. jsonl作成（英語は乱択）
 
 ### 事前準備
 ```bash
@@ -55,14 +55,35 @@ $ conda activate .venv_data
 ```
 ### 日本語
 ```bash
-$ python -m preprocessing.t01_delete_spaceline --language ja --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/
+$ python -m preprocessing.t01_delete_spaceline \
+    --language ja \
+    --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ \
+    --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/
 ```
 ### 英語
 ```bash
-$ python -m preprocessing.t01_delete_spaceline --language en --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/
+$ python -m preprocessing.t01_delete_spaceline \
+    --language en \
+    --input_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/prefilter/ \
+    --output_base /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/
 ```
 
-## 4. 未知語の間引き（日本語のみ）
+## 4. cleaning and text作成
+
+### 日本語
+```bash
+$ python -m preprocessing.filtering \
+    --input_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/ \
+    --output_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/
+```
+### 英語
+```bash
+$ python -m preprocessing.filtering \
+    --input_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/jsonl/ \
+    --output_dir /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/
+```
+
+## 5. 未知語の間引き（日本語のみ）
 
 ### 事前準備
 ```bash
@@ -74,14 +95,14 @@ python -m  unidic download
 $ python -m preprocessing.t02_mabiki --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt
 ```
 
-## 5. 分かち書き（日本語のみ）
+## 6. 分かち書き（日本語のみ）
 
 ### 日本語
 ```bash
 $ python -m preprocessing.t03_wakachi --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt
 ```
 
-## 6. 言語ごとのトークナイズ
+## 7. 言語ごとのトークナイズ
 
 ### 事前準備
 ```bash
@@ -94,8 +115,36 @@ $ conda activate .venv
 ```bash
 $ python -m train_tokenizer.train_sentencepiece_tokenizer \
     --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt \
-    --model_prefix JINIAC_V0_9_ja48000 \
-    --vocab_size 48000 \
-    --num_threads 12 \
+    --model_prefix JINIAC_V0_9_ja60000 \
+    --vocab_size 60000 \
+    --num_threads 24 \
     --pretokenization_delimiter "||||"
+```
+### 英語
+```bash
+$ python -m train_tokenizer.train_sentencepiece_tokenizer \
+    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/en_wiki.txt \
+    --model_prefix JINIAC_V0_9_en13000 \
+    --vocab_size 13000 \
+    --num_threads 24 \
+    --max_sentencepiece_length 16
+```
+
+## 8. prefixと重複の削除
+
+### 日本語
+```bash
+$ python train_tokenizer/specialSymbolRemove.py JINIAC_V0_9_ja48000.vocab > JINIAC_V0_9_ja48000.vocab.symbolRemoved
+```
+### 英語
+```bash
+$ python train_tokenizer/specialSymbolRemove4symbols.py JINIAC_V0_9_en13000.vocab > JINIAC_V0_9_en13000.vocab.symbolRemoved
+```
+
+
+
+### 事前準備
+```bash
+# llm-jp-tokenizerのclone
+$  git clone -b release_v21 https://github.com/llm-jp/llm-jp-tokenizer.git
 ```

@@ -26,7 +26,7 @@ def main():
           num += 1
           for word in tagger(line):
             wakachi = wakachi + word.surface + '||||'
-          o.write(wakachi)
+          o.write(wakachi + '\n')
           wakachi = ""
           if num % 100000 == 0:
             print(f'num: {num}')

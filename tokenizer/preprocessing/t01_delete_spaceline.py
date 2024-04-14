@@ -2,6 +2,7 @@ import argparse
 from ast import parse
 import os
 import re
+import json
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -18,12 +19,12 @@ def main():
 
     lang = args.language
     in_path = args.input_base + lang
-    text_path = args.output_base + lang + '_wiki.txt'
+    json_path = args.output_base + lang + '_wiki.jsonl'
 
     os.makedirs(args.output_base, exist_ok=True)
     
     num = 0
-    with open(text_path, 'w', encoding='utf-8') as o:
+    with open(json_path, 'w', encoding='utf-8') as o:
       for root, _, files in os.walk(in_path):
         for file in files:
           if lang == "ja" or (lang == "en" and file.endswith('9')):
@@ -31,7 +32,8 @@ def main():
               content = f.read()
               new_content = re.sub(r'^<[^>]*>$', '', content, flags=re.MULTILINE)
               e = re.sub(r'^\n', '', new_content, flags=re.MULTILINE)
-              o.write(e)
+              sentence_dict = {'text': e}
+              o.write(json.dumps(sentence_dict, ensure_ascii=False) + '\n')
               num += 1
               if num % 100 == 0:
                 print(f'num: {num}')
