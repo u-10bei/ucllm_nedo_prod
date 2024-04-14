@@ -94,7 +94,9 @@ $ python -m preprocessing.t02_mabiki \
 
 ### 日本語
 ```bash
-$ python -m preprocessing.t03_wakachi --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt
+$ python -m preprocessing.t03_wakachi \
+    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt \
+    --output /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/jawiki_newline_mecab.txt
 ```
 
 ## 7. 言語ごとのトークナイズ
@@ -118,7 +120,7 @@ $ python -m train_tokenizer.train_sentencepiece_tokenizer \
 ### 英語
 ```bash
 $ python -m train_tokenizer.train_sentencepiece_tokenizer \
-    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/en_wiki.txt \
+    --input /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/en_wiki/filtering.txt \
     --model_prefix JINIAC_V0_9_en13000 \
     --vocab_size 13000 \
     --num_threads 24 \
@@ -129,17 +131,46 @@ $ python -m train_tokenizer.train_sentencepiece_tokenizer \
 
 ### 日本語
 ```bash
-$ python train_tokenizer/specialSymbolRemove.py JINIAC_V0_9_ja48000.vocab > JINIAC_V0_9_ja48000.vocab.symbolRemoved
+$ python train_tokenizer/specialSymbolRemove.py \
+    JINIAC_V0_9_ja60000.vocab > JINIAC_V0_9_ja60000.vocab.symbolRemoved
 ```
 ### 英語
 ```bash
-$ python train_tokenizer/specialSymbolRemove4symbols.py JINIAC_V0_9_en13000.vocab > JINIAC_V0_9_en13000.vocab.symbolRemoved
+$ python train_tokenizer/specialSymbolRemove4symbols.py \
+    JINIAC_V0_9_en13000.vocab > JINIAC_V0_9_en13000.vocab.symbolRemoved
 ```
 
-
+## 9. 日英データマージ
 
 ### 事前準備
 ```bash
 # llm-jp-tokenizerのclone
-$  git clone -b release_v21 https://github.com/llm-jp/llm-jp-tokenizer.git
+$ git clone https://github.com/llm-jp/llm-jp-tokenizer.git
 ```
+### 処理
+```bash
+$ python llm-jp-tokenizer/scripts/mergeVocab.py \
+    llm-jp-tokenizer/models/ver2.1/specialTokens.vocab \
+    JINIAC_V0_9_ja60000.vocab.symbolRemoved \
+    JINIAC_V0_9_en13000.vocab.symbolRemoved > JINIAC_V0_9_ja42K_en13K.merged.vocab
+```
+
+## 10. 再推定
+
+### 事前準備
+```bash
+# llm-jp-tokenizerのclone
+$ cd llm-jp-tokenizer/scripts
+$ git clone https://github.com/tatHi/multigram.git
+$ pip install scipy numba
+```
+### 処理
+```bash
+$ cat /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt \
+    /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/en_wiki/filtering.txt > /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt
+$ python reestimateScore.py \
+    --vocab JINIAC_V0_9_ja42K_en13K.merged.vocab \
+    --data /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt \
+    --output JINIAC_V0_9.vocab \
+    --trainingMode EM \
+    --maxEpoch 2

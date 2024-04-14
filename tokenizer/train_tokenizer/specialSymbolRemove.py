@@ -22,4 +22,4 @@ for line in open(sys.argv[1]):
 for line in newVocabList:
     print('%s\t0.0'%line)
 
-print('size of new vocab:', len(newVocab))
+#print('size of new vocab:', len(newVocab))
