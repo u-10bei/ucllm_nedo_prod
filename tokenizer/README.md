@@ -20,67 +20,23 @@ $ cd ~/ucllm_nedo_dev/tokenizer
 
 ## 1. Download datasets
 
-### [wikipedia dump](https://dumps.wikimedia.org/jawiki/)
-
+### [日本語wikipedia dump](https://dumps.wikimedia.org/jawiki/)
 
 ```sh
 $ python -m preprocessing.download_dataset --split=20240301 --language=ja --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer
+```
 
+### [英語wikipedia dump](https://dumps.wikimedia.org/enwiki/)
+
+```sh
+$ python -m preprocessing.download_dataset --split=20240301 --language=en --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer
+```
+
+## 1. データ整形
+
+```sh
 $ python -m wikiextractor.WikiExtractor -o /persistentshare/storage/team_nakamura/member/horie/dataset/prefilter/ --no-templates /persistentshare/storage/team_nakamura/member/horie/dataset/tmp/wikipedia/20240301/ja/jawiki-20240301-pages-articles-multistream.xml.bz2
 ```
-
-splitに指定可能な値は[wikipedia dumpのindex](https://dumps.wikimedia.org/jawiki/)に指定されているディレクトリ
-
-### [lawdata](https://elaws.e-gov.go.jp/download/)
-
-
-```sh
-$ python -m preprocessing.download_dataset --dataset=lawdata --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/jalaw
-```
-
-### [aozora](https://huggingface.co/datasets/globis-university/aozorabunko-clean)
-
-
-```sh
-$ python -m preprocessing.download_dataset --dataset=aozora --output_base=/persistentshare/storage/team_nakamura/member/horie/dataset/aozora
-```
-
-### [Redpajama-1T](https://huggingface.co/datasets/togethercomputer/RedPajama-Data-1T)
-
-全件ダウンロード(※注 巨大なデータセットです。ダウンロード先、実行時間にご注意ください)
-
-```sh
-$ python -m preprocessing.download_dataset --dataset=redpajama
-```
-
-データセット別のダウンロード
-
-```sh
-$ python -m preprocessing.download_dataset --dataset=redpajama --split=c4
-```
-
-splitに指定可能なデータセットは以下
-- arxiv
-- book
-- c4
-- common_crawl
-- github
-- stackexchange
-- wikipedia
-
-[Github](https://github.com/togethercomputer/RedPajama-Data)にFiltering、Dedupを含めたコードもあるので参考にして下さい
-
-### [Redpajama v2](https://huggingface.co/datasets/togethercomputer/RedPajama-Data-V2)
-
-Redpajamaの後継バージョンです
-
-
-```sh
-$ python -m preprocessing.download_dataset --dataset=redpajama_v2 --snapshot=2023-06 --partition=head_middle --language=en
-```
-
-その他ダウンロード可能なスナップショット、パーティション、言語等の詳しい使い方はHugging Faceを参照してください
-加工処理用(quality signals、minhash signatures, duplicate ids)のデータセットもダウンロード可能なので同様にサイトを参照してください
 
 ## 2. Data processing
 
