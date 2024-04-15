@@ -169,8 +169,8 @@ $ pip install scipy numba
 $ cat /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt \
     /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/en_wiki/filtering.txt > /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt
 $ python reestimateScore.py \
-    --vocab JINIAC_V0_9_ja42K_en13K.merged.vocab \
+    --vocab /home/ext_u10bei_github_io_gmail_com/ucllm_nedo_dev/tokenizer/JINIAC_V0_9_ja42K_en13K.merged.vocab \
     --data /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt \
-    --output JINIAC_V0_9.vocab \
+    --output /home/ext_u10bei_github_io_gmail_com/ucllm_nedo_dev/tokenizer/JINIAC_V0_9.vocab \
     --trainingMode EM \
     --maxEpoch 2

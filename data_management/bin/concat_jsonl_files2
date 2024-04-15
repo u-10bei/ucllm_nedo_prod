@@ -1,7 +1,0 @@
-#! /bin/bash
-
-input_dir=$1
-output_dir=$2
-
-mkdir -p ${output_dir}
-cat ${input_dir}/*.jsonl > ${output_dir}/merge3.jsonl
