@@ -31,7 +31,7 @@ for line in open(sys.argv[1]):
 
       if token not in newVocab:
           newVocab.add(token)
-          newVocabList.append(token)
+          newVocabList.append(token + '\t' + score)
 
 for line in newVocabList:
-    print('%s\t0.0'%line)
+    print(line)

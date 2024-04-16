@@ -1,7 +1,7 @@
 # Tokenizer
 ucllm-nedo-dev配下に配置されることを想定しています。
 
-## GCPでの実行手順
+# GCPでの実行手順
 ```bash
 #実行環境
 $ srun --gpus-per-node=0 --time=06:00:00 --nodes=1 --pty bash -i
@@ -10,7 +10,7 @@ $ source ~/miniconda3/etc/profile.d/conda.sh
 # Python仮想環境を有効化。
 $ conda activate .venv_data
 
-# トーク内座の作業ディレクトリへ移動
+# トークナイザーの作業ディレクトリへ移動
 $ cd ~/ucllm_nedo_dev/tokenizer
 ```
 
@@ -127,7 +127,17 @@ $ python -m train_tokenizer.train_sentencepiece_tokenizer \
     --max_sentencepiece_length 16
 ```
 
-## 8. prefixと重複の削除
+## 8. .vocabの書き換え
+
+### 日本語
+```bash
+$ python train_tokenizer/replaceVocab_ja.py
+```
+### 英語
+```bash
+$ python train_tokenizer/replaceVocab_en.py
+```
+## 9. prefixと重複の削除
 
 ### 日本語
 ```bash
@@ -140,37 +150,52 @@ $ python train_tokenizer/specialSymbolRemove4symbols.py \
     JINIAC_V0_9_en13000.vocab > JINIAC_V0_9_en13000.vocab.symbolRemoved
 ```
 
-## 9. 日英データマージ
+## 10. 日英データマージ
 
-### 事前準備
-```bash
-# llm-jp-tokenizerのclone
-$ git clone https://github.com/llm-jp/llm-jp-tokenizer.git
-```
 ### 処理
 ```bash
-$ python llm-jp-tokenizer/scripts/mergeVocab.py \
+$ python train_tokenizer/mergeVocab.py \
     llm-jp-tokenizer/models/ver2.1/specialTokens.vocab \
     JINIAC_V0_9_ja60000.vocab.symbolRemoved \
     JINIAC_V0_9_en13000.vocab.symbolRemoved > JINIAC_V0_9_ja42K_en13K.merged.vocab
 ```
 
-## 10. 再推定
+## 11. vocabファイルをmodelファイルに変換
 
-### 事前準備
-```bash
-# llm-jp-tokenizerのclone
-$ cd llm-jp-tokenizer/scripts
-$ git clone https://github.com/tatHi/multigram.git
-$ pip install scipy numba
-```
 ### 処理
 ```bash
-$ cat /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/ja_wiki_mabiki.txt \
-    /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/filter/en_wiki/filtering.txt > /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt
-$ python reestimateScore.py \
-    --vocab /home/ext_u10bei_github_io_gmail_com/ucllm_nedo_dev/tokenizer/JINIAC_V0_9_ja42K_en13K.merged.vocab \
-    --data /persistentshare/storage/team_nakamura/member/horie/dataset/tokenizer/text/merged.txt \
-    --output /home/ext_u10bei_github_io_gmail_com/ucllm_nedo_dev/tokenizer/JINIAC_V0_9.vocab \
-    --trainingMode EM \
-    --maxEpoch 2
+$ python vocab2model.py \
+    --vocab JINIAC_V0_9_ja42K_en13K.merged.vocab \
+    --output JINIAC_V0_9_ja42K_en13K.merged.model \
+    --baseModel JINIAC_V0_9_en13000.model
+```
+
+# huggingface アップロード
+
+## 1. トークナイザーのHuggingFace Transformers形式への変換
+
+```sh
+(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/step3_upload_pretrained_model/
+
+# 変換スクリプトを実行。
+(.venv_train) $ python -m convert_tokenizer_from_sentencepiece_to_huggingface_transformers \
+    --input_tokenizer_file ~/ucllm_nedo_dev/tokenizer/JINIAC_V0_9_ja42K_en13K.merged.model \
+    --output_tokenizer_dir ~/ucllm_nedo_dev/tokenizer/output/
+```
+### Step 3-2-1. トークナイザーのHuggingFace Hubへのアップロード
+
+```sh
+(.venv_train) $ cd ~/ucllm_nedo_dev/train/scripts/common/
+
+# HuggingFaceにログイン。
+# https://huggingface.co/settings/tokens --> 書き込み権限ありのAPIキーをコピペ。
+(.venv_train) $ huggingface-cli login
+
+# HuggingFaceにログインしていることを確認。
+(.venv_train) $ huggingface-cli whoami
+
+# アップロードスクリプトを実行。
+(.venv_train) $ python upload_only_tokenizer_to_huggingface_hub.py \
+    --input_tokenizer_dir ~/ucllm_nedo_dev/tokenizer/output \
+    --output_model_name JINIAC_tokenizer_v0.9_ja42k_en13k
+```
